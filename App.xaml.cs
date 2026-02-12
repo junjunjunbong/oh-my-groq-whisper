@@ -16,6 +16,7 @@ public partial class App : Application
     private GroqTranscriptionService _transcriptionService = null!;
     private AppStateMachine _stateMachine = null!;
     private OverlayWindow? _overlayWindow;
+    private WindowSettings _windowSettings = null!;
     
     private string? _currentAudioFile;
     private CancellationTokenSource? _transcriptionCts;
@@ -57,6 +58,9 @@ public partial class App : Application
             return;
         }
 
+        // Load window settings
+        _windowSettings = SettingsManager.LoadWindowSettings();
+        
         InitializeServices();
         InitializeStateMachine();
         _hotkeyHook.Start();
@@ -83,8 +87,19 @@ public partial class App : Application
 
     private void OnHotkeyPressed()
     {
-        if (_stateMachine.CurrentState != AppState.Idle)
+        var currentState = _stateMachine.CurrentState;
+        
+        // Allow new recording from Idle, Editing, or Error states
+        if (currentState != AppState.Idle && currentState != AppState.Editing && currentState != AppState.Error)
             return;
+
+        // If in Editing or Error state, close current overlay first
+        if (currentState == AppState.Editing || currentState == AppState.Error)
+        {
+            _transcriptionCts?.Cancel();
+            _overlayWindow?.Close();
+            _overlayWindow = null;
+        }
 
         _stateMachine.HandleEvent(AppEvent.HotkeyDown);
     }
@@ -196,7 +211,7 @@ public partial class App : Application
     {
         if (_overlayWindow == null || !_overlayWindow.IsLoaded)
         {
-            _overlayWindow = new OverlayWindow();
+            _overlayWindow = new OverlayWindow(_windowSettings);
             _overlayWindow.CopyRequested += OnCopyRequested;
             _overlayWindow.CloseRequested += OnCloseRequested;
             _overlayWindow.RetryRequested += OnRetryRequested;

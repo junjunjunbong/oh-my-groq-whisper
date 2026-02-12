@@ -36,9 +36,12 @@ public class AppStateMachine
             (AppState.Editing, AppEvent.CopyDone) => AppState.Idle,
             (AppState.Editing, AppEvent.Cancel) => AppState.Idle,
 
+            // Editing/Error -> Recording (HotkeyDown for new recording)
+            (AppState.Editing, AppEvent.HotkeyDown) => AppState.Recording,
+            (AppState.Error, AppEvent.HotkeyDown) => AppState.Recording,
+
             // Error -> Idle (Cancel or Retry)
             (AppState.Error, AppEvent.Cancel) => AppState.Idle,
-            (AppState.Error, AppEvent.HotkeyDown) => AppState.Recording,
 
             // Ignore invalid transitions
             _ => prevState

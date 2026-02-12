@@ -29,6 +29,10 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 ```
 Idle → (HotkeyDown) → Recording → (HotkeyUp) → Finalizing → (Success) → Editing → (Copy/Cancel) → Idle
                                                             → (Fail) → Error → (Cancel/Retry) → Idle
+                                                            
+# Editing/Error 상태에서도 HotkeyDown으로 바로 새 Recording 가능 (창 닫기 불필요)
+Editing → (HotkeyDown) → Recording
+Error → (HotkeyDown) → Recording
 ```
 
 **레이어 구조:**
@@ -39,8 +43,8 @@ Idle → (HotkeyDown) → Recording → (HotkeyUp) → Finalizing → (Success) 
 | Input | `Input/HotkeyHook.cs` | SetWindowsHookEx P/Invoke 글로벌 키보드 훅 |
 | Audio | `Audio/AudioRecorder.cs` | NAudio WaveInEvent, 16kHz/16bit/Mono WAV 녹음 |
 | STT | `STT/GroqTranscriptionService.cs`, `STT/GroqModels.cs` | Groq API 호출 (multipart/form-data), 응답 파싱 |
-| UI | `UI/OverlayWindow.xaml(.cs)` | WPF 오버레이 (녹음/변환중/편집/에러 상태별 표시) |
-| Util | `Util/ClipboardService.cs`, `Util/TempFileCleaner.cs` | 클립보드, 임시 WAV 정리 |
+| UI | `UI/OverlayWindow.xaml(.cs)` | WPF 오버레이 (녹음/변환중/편집/에러 상태, 크기 조절, 글자 크기 자동 조절, X 버튼) |
+| Util | `Util/ClipboardService.cs`, `Util/TempFileCleaner.cs`, `Util/SettingsManager.cs` | 클립보드, 임시 WAV 정리, 설정 저장/로드 |
 
 **진입점:** `App.xaml.cs` — 환경변수 체크 → 서비스 초기화 → 이벤트 핸들러 등록 → 키보드 훅 시작
 
@@ -53,7 +57,9 @@ Idle → (HotkeyDown) → Recording → (HotkeyUp) → Finalizing → (Success) 
 - **API 엔드포인트:** `https://api.groq.com/openai/v1/audio/transcriptions`
 - **최소 녹음 시간:** 300ms (미만 시 전송하지 않음)
 - **API 타임아웃:** 60초
-- **오버레이:** 커서 근처 배치, TopMost, WindowStyle=None, DPI 인식
+- **오버레이:** 커서 근처 배치, TopMost, WindowStyle=None, DPI 인식, 크기 조절 가능 (ResizeMode=CanResizeWithGrip)
+- **글자 크기 조절:** 창 너비에 비례 (0.8~1.5배, 기준 400px)
+- **설정 파일:** `%AppData%/GroqWhisperPTT/settings.json` (창 크기 저장)
 
 ## Code Conventions
 
